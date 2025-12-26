@@ -1,30 +1,52 @@
 from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
-from fastapi.responses import FileResponse
-from pydantic import BaseModel, HttpUrl
-from typing import Optional, List
+from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel, HttpUrl, Field
+from typing import Optional, List, Dict
 import os
-from app.core.video_processor import VideoProcessor
+import logging
 
-router = APIRouter()
+from app.core import VideoProcessor
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(tags=["video"])
 processor = VideoProcessor()
 
 class DownloadRequest(BaseModel):
-    url: HttpUrl
-    format: Optional[str] = "best"
-    extract_audio: Optional[bool] = False
+    """Video download request model"""
+    url: HttpUrl = Field(..., description="Video URL for download")
+    format: Optional[str] = Field(
+        "best", 
+        description="Video format (best, worst, bestvideo+bestaudio, и т.д.)"
+    )
+    extract_audio: Optional[bool] = Field(
+        False, 
+        description="Extract audio only"
+    )
 
 class ConvertRequest(BaseModel):
-    filename: str
-    output_format: Optional[str] = "mp4"
-    resolution: Optional[str] = None
+    """Video conversion request model"""
+    filename: str = Field(..., description="File name for conversion")
+    output_format: Optional[str] = Field(
+        "mp4", 
+        description="Output format (mp4, avi, mov, и т.д.)"
+    )
+    resolution: Optional[str] = Field(
+        None, 
+        description="Resolution (e.g.: 1280x720)"
+    )
 
 class AudioExtractRequest(BaseModel):
-    filename: str
-    audio_format: Optional[str] = "mp3"
+    """Request model for audio extraction"""
+    filename: str = Field(..., description="Video file name")
+    audio_format: Optional[str] = Field(
+        "mp3", 
+        description="Audio format (mp3, wav, aac)"
+    )
 
 @router.get("/info")
-async def get_video_info(url: str = Query(..., description="URL видео")):
-    """Получить информацию о видео"""
+async def get_video_info(url: str = Query(..., description="Video URL")):
+    """Get information about the video"""
     try:
         info = processor.get_video_info(str(url))
         return {
@@ -36,7 +58,7 @@ async def get_video_info(url: str = Query(..., description="URL видео")):
 
 @router.post("/download")
 async def download_video(request: DownloadRequest):
-    """Скачать видео или аудио"""
+    """Download video or audio"""
     result = processor.download_video(
         url=str(request.url),
         format=request.format,
@@ -50,7 +72,7 @@ async def download_video(request: DownloadRequest):
 
 @router.post("/convert")
 async def convert_video(request: ConvertRequest):
-    """Конвертировать видео"""
+    """Convert video"""
     input_path = os.path.join("downloads", request.filename)
     
     if not os.path.exists(input_path):
@@ -69,7 +91,7 @@ async def convert_video(request: ConvertRequest):
 
 @router.post("/extract-audio")
 async def extract_audio(request: AudioExtractRequest):
-    """Извлечь аудио из видео"""
+    """Extract audio from video"""
     input_path = os.path.join("downloads", request.filename)
     
     if not os.path.exists(input_path):
@@ -87,7 +109,7 @@ async def extract_audio(request: AudioExtractRequest):
 
 @router.get("/files")
 async def list_files():
-    """Список загруженных файлов"""
+    """List of downloaded files"""
     files = []
     for filename in os.listdir("downloads"):
         filepath = os.path.join("downloads", filename)
@@ -102,7 +124,7 @@ async def list_files():
 
 @router.get("/download-file/{filename}")
 async def download_file(filename: str):
-    """Скачать файл"""
+    """Download file"""
     filepath = os.path.join("downloads", filename)
     
     if not os.path.exists(filepath):
@@ -116,7 +138,7 @@ async def download_file(filename: str):
 
 @router.delete("/file/{filename}")
 async def delete_file(filename: str):
-    """Удалить файл"""
+    """Delete file"""
     filepath = os.path.join("downloads", filename)
     
     if not os.path.exists(filepath):

@@ -1,6 +1,6 @@
 """
-Video Processing API
-API для скачивания и обработки видео с использованием yt-dlp и ffmpeg
+yt-dlp ffmpeg api
+API for downloading and processing video using yt-dlp and ffmpeg
 """
 
 __version__ = "1.0.0"

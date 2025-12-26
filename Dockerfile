@@ -1,5 +1,4 @@
-dockerfile
-FROM python:3.14-slim
+FROM python:3.11-slim
 
 # Устанавливаем системные зависимости
 RUN apt-get update && apt-get install -y \
@@ -23,7 +22,7 @@ COPY ./app ./app
 RUN mkdir -p /app/downloads
 
 # Открываем порт
-EXPOSE 8000
+EXPOSE 8181
 
 # Запускаем приложение
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8181"]
